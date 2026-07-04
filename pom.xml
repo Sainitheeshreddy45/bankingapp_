@@ -121,7 +121,7 @@
 						<exclude>
 							<groupId>org.projectlombok</groupId>
 							<artifactId>lombok</artifactId>
-							<version>${lombok.version}</version>
+							<!-- 💡 Version element removed successfully from here -->
 						</exclude>
 					</excludes>
 				</configuration>

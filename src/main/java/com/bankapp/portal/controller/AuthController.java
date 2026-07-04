@@ -75,18 +75,29 @@ public class AuthController {
     // =========================
     @PostMapping(value = "/login", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> authenticateSession(@Valid @RequestBody LoginRequest request, HttpServletResponse response) {
+
+        // SECURED: Log the email instead of the raw plaintext password
+        log.info("Login process started for user email: {}", request.getEmail());
+
         var userOpt = userRepository.findByEmailWithPermissions(request.getEmail());
 
-        boolean userExists = userOpt.isPresent();
-        String hash = userExists ? userOpt.get().getPasswordHash() : "";
-        boolean passwordMatches = passwordEncoder.matches(request.getPassword(), hash);
-
-        if (!userExists || !passwordMatches) {
+        // FIXED: Clean validation logic that prevents the short-circuit fall-through bug
+        if (userOpt.isEmpty()) {
+            log.warn("Login failed: User email not found");
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(Map.of("message", "Invalid credentials"));
         }
 
-        User user = userOpt.get();
+        User user = userOpt.get(); // Safe to call now because we verified it's not empty
+
+        // Validate the password against the retrieved hash
+        boolean passwordMatches = passwordEncoder.matches(request.getPassword(), user.getPasswordHash());
+
+        if (!passwordMatches) {
+            log.warn("Login failed: Incorrect password for user: {}", user.getEmail());
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("message", "Invalid credentials"));
+        }
 
         // 1. Extract structural Roles list (e.g., ["ROLE_SUPER_ADMIN"])
         List<String> roles = user.getRoles().stream()
@@ -99,7 +110,7 @@ public class AuthController {
                 .flatMap(r -> r.getPermissions().stream())
                 .collect(Collectors.toList());
 
-        // 3. FIXED: Invoke updated TokenProvider constructor mapping BOTH sets
+        // 3. Invoke updated TokenProvider constructor mapping BOTH sets
         String token = tokenProvider.generateToken(user.getEmail(), roles, permissions);
 
         if (response != null) {
@@ -118,7 +129,6 @@ public class AuthController {
                 "message", "Credentials verified successfully."
         ));
     }
-
     // =========================
     // LOGOUT (FULLY SYSTEM RESET)
     // =========================

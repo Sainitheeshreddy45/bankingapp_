@@ -59,11 +59,9 @@ public class Merchant {
     @Column(name = "gst_status", length = 32)
     private DocStatus gstStatus;
 
-    @Lob
     @Column(name = "pan_data")
     private byte[] panData;
 
-    @Lob
     @Column(name = "gst_data")
     private byte[] gstData;
 

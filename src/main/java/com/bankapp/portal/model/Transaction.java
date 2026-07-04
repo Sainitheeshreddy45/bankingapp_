@@ -14,8 +14,8 @@ public class Transaction {
     private String id;
 
     // 👑 Ensure the field variable name matches your query text exactly
-    @Column(name = "merchant_id", nullable = false)
-    private String merchantId;
+    @Column(name = "merchant_id")
+    private Long merchantId;
 
     @Column(name = "amount", nullable = false, precision = 15, scale = 2)
     private BigDecimal amount;
